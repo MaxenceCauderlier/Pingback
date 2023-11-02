@@ -28,7 +28,7 @@ Pingback nécessite les librairies suivantes :
 Il suffit d'inclure le fichier :
 
 ```php
-require_once('..pingback.php');
+require_once('pingback.php');
 ```
 
 ## Set up
@@ -37,12 +37,25 @@ Pour mettre en place ce système de pingback, vous devez suivre ces quelques ét
 
 ### Envoyer un pingback
 
-Pour notifier 
+Pour notifier les autres blogs que vous avez écrit un article et que des liens pointent vers leurs articles, il suffit de faire cela :
 
-### Add a pingback link
+```php
+$ping = new Pingback();
+$ping->inspect('http://mydomain.com/blog/my_article');
+```
+
+En remplaçant `http://mydomain.com/blog/my_article` par l'URL de votre article que vous avez rédigé.
+La classe Pingback va alors récupérer le contenu de la page, tester tous les liens présents sur celle-ci en checkant la présence d'une balise pingback, et envoyer des pingback à tous les liens valides.
+
+### Add a pingback page
+
+Pour que les autres sites vous répondent, nous allons devoir mettre en place une adresse de pingback.
+Pour l'exemple, nous créerons ici une page `ping.php`, destinée à recevoir les pingback que les autres blogs peuvent nous envoyer, mais aussi les réponses à nos pingback.
+
+
+Par exemple, pour un blog sous WordPress, le lien utilisé pour les pingback est toujours celui-ci (http://domain.com/xmlrpc.php).
 
 Sur les pages de votre blog qui sont destinés à recevoir des pingback, vous devez mettre en place une balise ou un header indiquant votre lien de pingback.
-Par exemple, pour un blog sous WordPress, le lien utilisé pour les pingback est toujours celui-ci (http://domain.com/xmlrpc.php).
 
 ## Exploit
 
