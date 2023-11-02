@@ -56,6 +56,10 @@ Dans ce fichier, que nous mettrons à la racine du site, mettons ce contenu :
 ```php
 $ping = new Pingback();
 $res = $ping->listen('pingCallBack');
+if ($res === null) {
+  // Erreur pendant le traitement du ping. On envoi l'erreur correspondante et on ferme le script.
+  $ping->sendResponse();
+}
 if (!$res) {
   $ping->generateErrorResponse(Pingback::ERR_ALREADY_REGISTERRED);
 }
@@ -81,16 +85,37 @@ La méthode `listen` n'attend qu'un argument : une fonction de [callback valide]
 - `$reqBody` est le contenu HTML de `$sourceURL`, page qui a fait un lien vers notre article
 
 Cette méthode va "écouter" toutes les requêtes envoyées à l'adresse `http://mydomain.com/ping.php`. Si une requête est envoyée en POST, avec une méthode de pingback, et que le ping est valide, alors elle exécutera la fonction de callback fournie en argument (ici la fonction `pingCallBack`).
+Si le retour de la méthode est `null`, alors une erreur a été trouvée pendant le traitement du ping.
 
-Dans cette fonction de callback, vous avez le soin de traiter le ping entrant, grâce aux 3 variables fournies et décrites plus haut :
+Dans la fonction de callback, vous avez le soin de traiter le ping entrant, grâce aux 3 variables fournies et décrites plus haut :
 - Soit vous ajoutez le commentaire
 - Ou alors vous le refusez, peut-être parce qu'il existe déjà par exemple.
-  
 
-Par exemple, pour un blog sous WordPress, le lien utilisé pour les pingback est toujours celui-ci (http://domain.com/xmlrpc.php).
+### Déclarer l'adresse de pingback
 
-Sur les pages de votre blog qui sont destinés à recevoir des pingback, vous devez mettre en place une balise ou un header indiquant votre lien de pingback.
+Pour le moment, notre adresse de pingback existe (`http://mydomain.com/ping.php`), mais les autres blogs ne peuvent pas la trouver.
+Nous allons devoir mettre en place un moyen de faire connaître cette page.
+Il existe 2 façons de procèder, et **une de ces 2 méthodes doit être mise en place sur chaque article où vous souhaitez recevoir des pingback**
 
-## Exploit
+#### Header
 
-Dont use domain.com/xmlrpc.php as your pingback URL, cause robots will try to spam it
+La première est d'envoyer un header sur la page d'un article de blog :
+```php
+header('X-Pingback: http://mydomain.com/ping.php');
+```
+
+#### Balise link
+
+Ou alors, vous pouvez mettre en place dans le `<head>` de votre page HTML, une balise d'entête destinée à donner aux autres blogs votre adresse de ping :
+```html
+<link rel="pingback" href="http://mydomain.com/ping.php">
+```
+
+Et c'est tout !
+
+## Risques et exploits
+
+Tous les blogs WordPress utilisent l'adresse de pingback suivante : `http://domain.com/xmlrpc.php`
+A cause des robots qui tentent de spammer cette adresse, je vous recommande de ne pas utiliser la même, mais préférer par exemple `http://domain.com/ping.php`.
+
+Enfin, ne mettez en place une des 2 balises pingback que sur les pages qui peuvent réellement accepter les pingback. Sinon, vous allez recevoir des ping inutiles sur votre page contact, sur la liste des articles de blog, etc alors que vous ne pourrez jamais ajouter de commentaire dans ces pages.
