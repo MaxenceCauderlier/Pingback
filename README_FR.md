@@ -19,7 +19,7 @@ Cette classe va gérer ces envois et réponses presque automatiquement.
 
 ## Pré-requis
 
-Pingback nécessite les librairies suivantes :
+Pingback nécessite PHP >= 7.4 et les librairies suivantes :
 - [libxml](https://www.php.net/manual/en/book.libxml.php), installée par défaut depuis PHP 7.4
 - [cURL](https://www.php.net/manual/en/book.curl.php)
 
