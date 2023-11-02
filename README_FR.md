@@ -17,11 +17,11 @@ Le fonctionnement des pingback est celui-ci :
 
 Cette classe va gérer ces envois et réponses presque automatiquement.
 
-## Requirements
+## Pré-requis
 
 Pingback nécessite les librairies suivantes :
 - [libxml](https://www.php.net/manual/en/book.libxml.php), installée par défaut depuis PHP 7.4
-- [libcurl](https://www.php.net/manual/en/book.curl.php)
+- [cURL](https://www.php.net/manual/en/book.curl.php)
 
 ## Installation
 
@@ -31,7 +31,7 @@ Il suffit d'inclure le fichier :
 require_once('pingback.php');
 ```
 
-## Set up
+## Mise en place
 
 Pour mettre en place ce système de pingback, vous devez suivre ces quelques étapes.
 
@@ -47,11 +47,45 @@ $ping->inspect('http://mydomain.com/blog/my_article');
 En remplaçant `http://mydomain.com/blog/my_article` par l'URL de votre article que vous avez rédigé.
 La classe Pingback va alors récupérer le contenu de la page, tester tous les liens présents sur celle-ci en checkant la présence d'une balise pingback, et envoyer des pingback à tous les liens valides.
 
-### Add a pingback page
+### Ajouter une page de pingback
 
-Pour que les autres sites vous répondent, nous allons devoir mettre en place une adresse de pingback.
+Pour que les autres sites vous répondent, nous allons devoir mettre en place une adresse et une page de pingback.
 Pour l'exemple, nous créerons ici une page `ping.php`, destinée à recevoir les pingback que les autres blogs peuvent nous envoyer, mais aussi les réponses à nos pingback.
+Dans ce fichier, que nous mettrons à la racine du site, mettons ce contenu :
 
+```php
+$ping = new Pingback();
+$res = $ping->listen('pingCallBack');
+if (!$res) {
+  $ping->generateErrorResponse(Pingback::ERR_ALREADY_REGISTERRED);
+}
+// On envoi la réponse à l'autre blog
+$ping->sendResponse();
+
+function pingCallBack($sourceURL, $targetURL, $reqBody) {
+  echo "Un ping est arrivé de $sourceURL vers notre article $target";
+  echo "La requête envoyée est de " . strlen($reqBody) . " caractères";
+  // Traitement du ping
+  if ('lePingEstAjouté') {
+    return true;
+  } else {
+    // On refuse le ping s'il est déjà enregistré
+    return false;
+  }
+}
+```
+
+La méthode `listen` n'attend qu'un argument : une fonction de [callback valide](https://www.php.net/manual/en/language.types.callable.php).
+- `$sourceURL` est l'adresse de l'article qui parle de notre article
+- `$targetURL` est l'adresse de notre article, celui vers qui le pingback est envoyé
+- `$reqBody` est le contenu HTML de `$sourceURL`, page qui a fait un lien vers notre article
+
+Cette méthode va "écouter" toutes les requêtes envoyées à l'adresse `http://mydomain.com/ping.php`. Si une requête est envoyée en POST, avec une méthode de pingback, et que le ping est valide, alors elle exécutera la fonction de callback fournie en argument (ici la fonction `pingCallBack`).
+
+Dans cette fonction de callback, vous avez le soin de traiter le ping entrant, grâce aux 3 variables fournies et décrites plus haut :
+- Soit vous ajoutez le commentaire
+- Ou alors vous le refusez, peut-être parce qu'il existe déjà par exemple.
+  
 
 Par exemple, pour un blog sous WordPress, le lien utilisé pour les pingback est toujours celui-ci (http://domain.com/xmlrpc.php).
 
