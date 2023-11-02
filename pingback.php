@@ -74,13 +74,15 @@ class Pingback {
      * Receive pingback, check if request is valid,
      * check our page accept pingback, verify link in source
      * and call the callback if all right
+     * Return 
      * @param mixed $callback A valid Callback
-     * @return void
+     * @return mixed
      */
     public function listen($callback) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             // Accept only POST request
             $this->generateErrorResponse(self::ERR_DENIED);
+            return null;
         }
         if (!isset( $HTTP_RAW_POST_DATA ) ) {
 			$HTTP_RAW_POST_DATA = file_get_contents( 'php://input' );
@@ -90,12 +92,14 @@ class Pingback {
         if (!$dom) {
             // DOM is malformed, unable to respond
             $this->generateErrorResponse(self::ERR_GENERIC);
+            return null;
         }
         $method = simplexml_import_dom($dom);
         if ($method->getName() === 'methodCall') {
             // Try to pingback our site
             if ((string)$method->methodName !== 'pingback.ping') {
                 $this->generateErrorResponse(self::ERR_DENIED);
+                return null;
             }
             $urls = [];
             foreach ($method->params->children() as $child) {
@@ -104,6 +108,7 @@ class Pingback {
             if (count($urls) !== 2) {
                 // No source & permalink provided
                 $this->generateErrorResponse(self::ERR_DENIED);
+                return null;
             }
             // Source is the unknown blog post, permalink is URL of your blog post
             list($source, $permalink)=$urls;
@@ -112,15 +117,18 @@ class Pingback {
             if ($source === $permalink) {
                 // We don't continue if source & permalink are the same blog post
                 $$this->generateErrorResponse(self::ERR_GENERIC);
+                return null;
             }
             if (!$this->isEnabled($permalink)) {
                 // Our page don't accept Pingback
                 $this->generateErrorResponse(self::ERR_TARGET_NOT_USABLE);
+                return null;
             }
             // We will check if a link to our blog post exist in the source
             $req = $this->curl($source);
             if (empty($req['body'])) {
                 $this->generateErrorResponse(self::ERR_TARGET_DONT_EXIST);
+                return null;
             }
             $doc = new DOMDocument('1.0', 'utf-8');
             $doc->stricterrorchecking = false;
@@ -132,8 +140,8 @@ class Pingback {
                     if ($this->getAbsoluteUrl($href) === $permalink) {
                         // Link found
                         $this->addLog('Pingback success from ' . $source . ' to our article ' . $permalink);
-                        call_user_func_array($callback,[$source, $permalink, $req['body']]);
                         $this->response = $this->getSuccessXml($source,$permalink);
+                        return call_user_func_array($callback,[$source, $permalink, $req['body']]);
                     }
                 }
             }
@@ -141,9 +149,11 @@ class Pingback {
             libxml_clear_errors();
             unset($doc);
             $this->generateErrorResponse(self::ERR_NO_LINK_URI);
+            return null;
         } else {
             // Bad method called
             $this->generateErrorResponse(self::ERR_GENERIC);
+            return null;
         }
     }
 
