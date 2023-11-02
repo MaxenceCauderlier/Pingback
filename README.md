@@ -1,4 +1,7 @@
 # Pingback
+
+[Readme en français](https://github.com/MaxenceCauderlier/Pingback/blob/main/README_FR.md)
+
 A simple PHP class to send and receive Pingback. Compatible with WordPress
 
 ## About
